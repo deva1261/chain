@@ -245,6 +245,29 @@ impl StoreReader {
     }
 }
 
+/// For read-only queries (e.g. balances over RPC), not for execution: the version is not
+/// tracked here.
+impl TStateView for StoreReader {
+    type Key = StateKey;
+
+    fn get_usage(&self) -> StateViewResult<StateStorageUsage> {
+        Ok(StateStorageUsage::new_untracked())
+    }
+
+    fn next_version(&self) -> Version {
+        0
+    }
+
+    fn get_state_slot(&self, key: &StateKey) -> StateViewResult<StateSlot> {
+        let value = self.get(key)?.map(|v| (0, v));
+        Ok(StateSlot::from_db_get(key.clone(), value))
+    }
+
+    fn get_state_value(&self, key: &StateKey) -> StateViewResult<Option<StateValue>> {
+        self.get(key)
+    }
+}
+
 fn read_state(db: &DB, key: &StateKey) -> StateViewResult<Option<StateValue>> {
     let read = || -> Result<Option<StateValue>> {
         let bytes = db.get_pinned_cf(cf(db, schema::STATE)?, key.encoded())?;

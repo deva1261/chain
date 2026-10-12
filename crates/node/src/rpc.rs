@@ -4,17 +4,21 @@
 //! - `POST /v1/transactions`: body is BCS `Vec<SignedTransaction>`; returns `{"accepted": n}`.
 //! - `GET /v1/status`
 //! - `GET /v1/commits?from=H`: committed blocks with height >= H (recent ones only).
+//! - `GET /v1/accounts/:address`: APT balance (octas) and next sequence number, as of the last
+//!   executed block (`executed_height`).
 
 use crate::validator::{Input, NodeEvent};
 use anyhow::Result;
-use aptos_types::transaction::SignedTransaction;
+use aptos_types::{account_address::AccountAddress, transaction::SignedTransaction};
 use axum::{
     Json, Router,
     body::Bytes,
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     routing::{get, post},
 };
+use chain_execution::query;
+use chain_storage::StoreReader;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::VecDeque,
@@ -52,10 +56,22 @@ pub struct RpcState {
     status: Mutex<Status>,
     commits: Mutex<VecDeque<CommitInfo>>,
     inbox: Mutex<mpsc::Sender<Input>>,
+    /// Persisted state; it includes every block up to `executed_height`.
+    state: StoreReader,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AccountInfo {
+    pub address: String,
+    /// APT in octas (1 APT = 10^8 octas).
+    pub balance: u64,
+    pub sequence_number: u64,
+    /// The balance includes every block up to this height.
+    pub executed_height: u64,
 }
 
 impl RpcState {
-    pub fn new(validator: u16, inbox: mpsc::Sender<Input>) -> Arc<Self> {
+    pub fn new(validator: u16, inbox: mpsc::Sender<Input>, state: StoreReader) -> Arc<Self> {
         Arc::new(Self {
             status: Mutex::new(Status {
                 validator,
@@ -63,6 +79,7 @@ impl RpcState {
             }),
             commits: Mutex::new(VecDeque::new()),
             inbox: Mutex::new(inbox),
+            state,
         })
     }
 
@@ -132,6 +149,7 @@ pub fn serve(addr: SocketAddr, state: Arc<RpcState>) -> Result<std::thread::Join
         .route("/v1/transactions", post(submit))
         .route("/v1/status", get(status))
         .route("/v1/commits", get(commits))
+        .route("/v1/accounts/:address", get(account))
         .with_state(state);
     Ok(std::thread::Builder::new().name("rpc".into()).spawn(move || {
         runtime.block_on(async move {
@@ -178,4 +196,26 @@ async fn commits(
             .cloned()
             .collect(),
     )
+}
+
+async fn account(
+    State(state): State<Arc<RpcState>>,
+    Path(address): Path<String>,
+) -> Result<Json<AccountInfo>, (StatusCode, String)> {
+    let address = AccountAddress::from_str_strict(&address)
+        .or_else(|_| AccountAddress::from_hex_literal(&address))
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("bad address {address}: {e}")))?;
+    // Read the height first: the state read after it is at least that recent.
+    let executed_height = state.status().executed_height;
+    let read = || -> anyhow::Result<AccountInfo> {
+        Ok(AccountInfo {
+            address: address.to_hex_literal(),
+            balance: query::apt_balance(&state.state, address)?,
+            sequence_number: query::sequence_number(&state.state, address)?,
+            executed_height,
+        })
+    };
+    read()
+        .map(Json)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:#}")))
 }

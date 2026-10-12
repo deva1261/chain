@@ -1,4 +1,4 @@
-//! Read helpers over the Aptos state layout. The RPC crate will expose these later.
+//! Read helpers over the Aptos state layout, served by the node's `GET /v1/accounts/:address`.
 
 use anyhow::Result;
 use aptos_types::{

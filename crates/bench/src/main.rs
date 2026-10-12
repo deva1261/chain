@@ -25,6 +25,7 @@ use std::{
 
 mod cluster;
 mod remote;
+mod transfer;
 
 const APT: u64 = 100_000_000;
 
@@ -42,6 +43,8 @@ enum Command {
     Cluster(cluster::ClusterArgs),
     /// End to end against running validators (e.g. `chain localnet`) through their RPC.
     Remote(remote::RemoteArgs),
+    /// Transfer APT between two accounts over RPC and check both balances on every validator.
+    Transfer(transfer::TransferArgs),
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -92,6 +95,7 @@ fn main() -> Result<()> {
         Command::Exec(args) => exec(args),
         Command::Cluster(args) => cluster::run(args),
         Command::Remote(args) => remote::run(args),
+        Command::Transfer(args) => transfer::run(args),
     }
 }
 

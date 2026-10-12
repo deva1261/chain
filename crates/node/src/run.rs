@@ -75,6 +75,7 @@ pub fn run_node(options: NodeOptions) -> Result<()> {
     store.apply_block(block, &[state.snapshot_output()?])?;
     log(me, &format!("genesis state installed in {:.1?}", start.elapsed()));
 
+    let reader = store.reader();
     let (inbox_tx, inbox) = mpsc::channel::<Input>();
     let verified = VerifiedBatches::new(VERIFIED_BATCHES);
     let pipeline = ExecutionPipeline::start(
@@ -112,7 +113,7 @@ pub fn run_node(options: NodeOptions) -> Result<()> {
     }
 
     // RPC, fed by validator events.
-    let rpc_state = RpcState::new(me, inbox_tx);
+    let rpc_state = RpcState::new(me, inbox_tx, reader);
     rpc::serve(options.rpc, rpc_state.clone())?;
     log(me, &format!("RPC on http://{}", options.rpc));
     let (observer, events) = mpsc::channel::<NodeEvent>();

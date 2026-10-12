@@ -63,6 +63,11 @@ impl LocalAccount {
         self.sequence_number
     }
 
+    /// Resumes from the chain's view of this account (e.g. after a benchmark used it).
+    pub fn set_sequence_number(&mut self, sequence_number: u64) {
+        self.sequence_number = sequence_number;
+    }
+
     /// Signs `payload` with the next sequence number and advances it.
     pub fn sign(&mut self, payload: TransactionPayload, chain_id: ChainId) -> Transaction {
         let raw = RawTransaction::new(
