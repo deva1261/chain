@@ -1,0 +1,90 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bench",
+    "crates/consensus",
+    "crates/execution",
+    "crates/genesis",
+    "crates/mempool",
+    "crates/network",
+    "crates/node",
+    "crates/storage",
+    "crates/types",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.93"
+publish = false
+
+[workspace.dependencies]
+# Our crates.
+chain-execution = { path = "crates/execution" }
+chain-genesis = { path = "crates/genesis" }
+chain-mempool = { path = "crates/mempool" }
+chain-network = { path = "crates/network" }
+chain-node = { path = "crates/node" }
+chain-consensus = { path = "crates/consensus" }
+chain-storage = { path = "crates/storage" }
+chain-types = { path = "crates/types" }
+
+# Aptos crates, used unmodified from the vendored checkout.
+aptos-aggregator = { path = "../vendor/aptos-core/aptos-move/aptos-aggregator" }
+aptos-block-executor = { path = "../vendor/aptos-core/aptos-move/block-executor" }
+aptos-cached-packages = { path = "../vendor/aptos-core/aptos-move/framework/cached-packages" }
+aptos-crypto = { path = "../vendor/aptos-core/crates/aptos-crypto" }
+aptos-crypto-derive = { path = "../vendor/aptos-core/crates/aptos-crypto-derive" }
+aptos-jellyfish-merkle = { path = "../vendor/aptos-core/storage/jellyfish-merkle" }
+aptos-keygen = { path = "../vendor/aptos-core/crates/aptos-keygen" }
+aptos-mvhashmap = { path = "../vendor/aptos-core/aptos-move/mvhashmap" }
+aptos-storage-interface = { path = "../vendor/aptos-core/storage/storage-interface" }
+aptos-types = { path = "../vendor/aptos-core/types" }
+aptos-vm = { path = "../vendor/aptos-core/aptos-move/aptos-vm" }
+aptos-vm-environment = { path = "../vendor/aptos-core/aptos-move/aptos-vm-environment" }
+aptos-vm-genesis = { path = "../vendor/aptos-core/aptos-move/vm-genesis" }
+aptos-vm-types = { path = "../vendor/aptos-core/aptos-move/aptos-vm-types" }
+move-core-types = { path = "../vendor/aptos-core/third_party/move/move-core/types" }
+move-vm-types = { path = "../vendor/aptos-core/third_party/move/move-vm/types" }
+
+anyhow = "1.0.98"
+axum = "0.7.5"
+bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
+bytes = { version = "1.4.0", features = ["serde"] }
+clap = { version = "4.3.9", features = ["derive"] }
+hex = "0.4.3"
+num_cpus = "1.13.1"
+quinn = { version = "0.11.2", default-features = false, features = ["ring", "runtime-tokio", "rustls"] }
+rand = "0.7.3"
+rcgen = "0.13"
+reqwest = { version = "0.12.5", default-features = false, features = ["blocking"] }
+rustls = { version = "0.23.7", default-features = false, features = ["ring", "std"] }
+rocksdb = { version = "0.24.0", features = ["lz4"] }
+tempfile = "3.3.0"
+tokio = { version = "1.35.1", features = ["full"] }
+rayon = "1.5.2"
+serde = { version = "1.0.193", features = ["derive", "rc"] }
+serde_json = "1.0.81"
+
+# Copied from aptos-core so its crates resolve to the same forks.
+[patch.crates-io]
+dudect-bencher = { git = "https://github.com/aptos-labs/dudect-bencher", rev = "9515677c83c58884c1a8c764251753269d46fc0e" }
+serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "9d2374af843a4562a194529b3cadb8518d7fcd65" }
+merlin = { git = "https://github.com/aptos-labs/merlin" }
+futures = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-channel = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-executor = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-core = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-util = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-sink = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-io = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-task = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+futures-macro = { git = "https://github.com/aptos-labs/futures-rs", branch = "backport" }
+ark-ec = { git = "https://github.com/aptos-labs/algebra", branch = "fix-fft-parallelism-cutoff" }
+ark-ff = { git = "https://github.com/aptos-labs/algebra", branch = "fix-fft-parallelism-cutoff" }
+ark-ff-macros = { git = "https://github.com/aptos-labs/algebra", branch = "fix-fft-parallelism-cutoff" }
+ark-ff-asm = { git = "https://github.com/aptos-labs/algebra", branch = "fix-fft-parallelism-cutoff" }
+ark-poly = { git = "https://github.com/aptos-labs/algebra", branch = "fix-fft-parallelism-cutoff" }
+ark-serialize = { git = "https://github.com/aptos-labs/algebra", branch = "fix-fft-parallelism-cutoff" }
+[profile.release]
+debug = 1
+overflow-checks = true

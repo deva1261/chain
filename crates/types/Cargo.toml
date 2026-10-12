@@ -1,0 +1,19 @@
+[package]
+name = "chain-types"
+version = "0.1.0"
+description = "Consensus data types (design doc section 9): committee, batches, blocks, votes and certificates"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-crypto-derive = { workspace = true }
+aptos-types = { workspace = true }
+bcs = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+aptos-keygen = { workspace = true }

@@ -1,0 +1,24 @@
+[package]
+name = "chain-bench"
+version = "0.1.0"
+description = "Benchmarks: execution-only throughput now, end-to-end load generator later"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-types = { workspace = true }
+chain-consensus = { workspace = true }
+chain-execution = { workspace = true }
+chain-genesis = { workspace = true }
+chain-node = { workspace = true }
+chain-storage = { workspace = true }
+clap = { workspace = true }
+num_cpus = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+bcs = { workspace = true }
+tempfile = { workspace = true }

@@ -1,0 +1,23 @@
+[package]
+name = "chain-storage"
+version = "0.1.0"
+description = "RocksDB flat state with an asynchronous Jellyfish Merkle Tree root (design doc D4, 6.2)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-jellyfish-merkle = { workspace = true }
+aptos-storage-interface = { workspace = true }
+aptos-types = { workspace = true }
+bcs = { workspace = true }
+chain-execution = { workspace = true }
+rayon = { workspace = true }
+rocksdb = { workspace = true }
+
+[dev-dependencies]
+chain-genesis = { workspace = true }
+bytes = { workspace = true }
+tempfile = { workspace = true }

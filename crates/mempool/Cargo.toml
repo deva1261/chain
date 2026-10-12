@@ -1,0 +1,18 @@
+[package]
+name = "chain-mempool"
+version = "0.1.0"
+description = "Transaction intake, batching and HRW-targeted forwarding (design doc D6, D9)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-types = { workspace = true }
+chain-types = { workspace = true }
+rayon = { workspace = true }
+
+[dev-dependencies]
+aptos-keygen = { workspace = true }
+chain-genesis = { workspace = true }

@@ -1,0 +1,16 @@
+[package]
+name = "chain-genesis"
+version = "0.1.0"
+description = "Genesis state: Aptos framework + funded accounts, and a local account helper for signing"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-cached-packages = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-keygen = { workspace = true }
+aptos-types = { workspace = true }
+aptos-vm-genesis = { workspace = true }
+chain-execution = { workspace = true }

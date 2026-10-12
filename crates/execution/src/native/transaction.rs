@@ -1,0 +1,150 @@
+// Copyright (c) Aptos Foundation
+// Licensed pursuant to the Innovation-Enabling Source Code License, available at https://github.com/aptos-labs/aptos-core/blob/main/LICENSE
+//
+// Ported from aptos-core `execution/executor-benchmark/src/native/native_transaction.rs`.
+// Changes: `parse` returns `None` instead of panicking on transactions the native path cannot
+// run, package publishing is no longer treated as a no-op, and `StateCheckpoint` (appended by
+// Block-STM when executing a known block) is recognized.
+
+use aptos_types::{
+    account_address::AccountAddress,
+    transaction::signature_verified_transaction::SignatureVerifiedTransaction,
+};
+use std::collections::HashMap;
+
+#[derive(Debug)]
+pub enum NativeTransaction {
+    Nop {
+        sender: AccountAddress,
+        sequence_number: u64,
+    },
+    FaTransfer {
+        sender: AccountAddress,
+        sequence_number: u64,
+        recipient: AccountAddress,
+        amount: u64,
+    },
+    Transfer {
+        sender: AccountAddress,
+        sequence_number: u64,
+        recipient: AccountAddress,
+        amount: u64,
+        fail_on_recipient_account_existing: bool,
+        fail_on_recipient_account_missing: bool,
+    },
+    BatchTransfer {
+        sender: AccountAddress,
+        sequence_number: u64,
+        recipients: Vec<AccountAddress>,
+        amounts: Vec<u64>,
+        fail_on_recipient_account_existing: bool,
+        fail_on_recipient_account_missing: bool,
+    },
+    BlockEpilogue,
+    BlockMetadata,
+    StateCheckpoint,
+}
+
+impl NativeTransaction {
+    pub fn parse(txn: &SignatureVerifiedTransaction) -> Option<Self> {
+        if !txn.is_valid() {
+            return None;
+        }
+        Some(match &txn.expect_valid() {
+            aptos_types::transaction::Transaction::UserTransaction(user_txn) => {
+                // Use executable_ref() to handle both EntryFunction and Payload variants uniformly
+                match user_txn.payload().executable_ref() {
+                    Ok(aptos_types::transaction::TransactionExecutableRef::EntryFunction(f))
+                        if !user_txn.payload().is_multisig() =>
+                    {
+                        match (
+                            *f.module().address(),
+                            f.module().name().as_str(),
+                            f.function().as_str(),
+                        ) {
+                            (AccountAddress::ONE, "aptos_account", "fungible_transfer_only") => {
+                                Self::FaTransfer {
+                                    sender: user_txn.sender(),
+                                    sequence_number: user_txn.sequence_number(),
+                                    recipient: bcs::from_bytes(&f.args()[0]).unwrap(),
+                                    amount: bcs::from_bytes(&f.args()[1]).unwrap(),
+                                }
+                            },
+                            (AccountAddress::ONE, "coin", "transfer") => Self::Transfer {
+                                sender: user_txn.sender(),
+                                sequence_number: user_txn.sequence_number(),
+                                recipient: bcs::from_bytes(&f.args()[0]).unwrap(),
+                                amount: bcs::from_bytes(&f.args()[1]).unwrap(),
+                                fail_on_recipient_account_existing: false,
+                                fail_on_recipient_account_missing: true,
+                            },
+                            (AccountAddress::ONE, "aptos_account", "transfer") => Self::Transfer {
+                                sender: user_txn.sender(),
+                                sequence_number: user_txn.sequence_number(),
+                                recipient: bcs::from_bytes(&f.args()[0]).unwrap(),
+                                amount: bcs::from_bytes(&f.args()[1]).unwrap(),
+                                fail_on_recipient_account_existing: false,
+                                fail_on_recipient_account_missing: false,
+                            },
+                            (AccountAddress::ONE, "aptos_account", "create_account") => {
+                                Self::Transfer {
+                                    sender: user_txn.sender(),
+                                    sequence_number: user_txn.sequence_number(),
+                                    recipient: bcs::from_bytes(&f.args()[0]).unwrap(),
+                                    amount: 0,
+                                    fail_on_recipient_account_existing: true,
+                                    fail_on_recipient_account_missing: false,
+                                }
+                            },
+                            (AccountAddress::ONE, "aptos_account", "batch_transfer") => {
+                                Self::BatchTransfer {
+                                    sender: user_txn.sender(),
+                                    sequence_number: user_txn.sequence_number(),
+                                    recipients: bcs::from_bytes(&f.args()[0]).unwrap(),
+                                    amounts: bcs::from_bytes(&f.args()[1]).unwrap(),
+                                    fail_on_recipient_account_existing: false,
+                                    fail_on_recipient_account_missing: true,
+                                }
+                            },
+                            (_, "simple", "nop") => Self::Nop {
+                                sender: user_txn.sender(),
+                                sequence_number: user_txn.sequence_number(),
+                            },
+                            _ => return None,
+                        }
+                    },
+                    _ => return None,
+                }
+            },
+            aptos_types::transaction::Transaction::BlockEpilogue(_) => Self::BlockEpilogue,
+            aptos_types::transaction::Transaction::BlockMetadata(_) => Self::BlockMetadata,
+            aptos_types::transaction::Transaction::BlockMetadataExt(_) => Self::BlockMetadata,
+            aptos_types::transaction::Transaction::StateCheckpoint(_) => Self::StateCheckpoint,
+            _ => return None,
+        })
+    }
+}
+
+pub fn compute_deltas_for_batch(
+    recipient_addresses: Vec<AccountAddress>,
+    transfer_amounts: Vec<u64>,
+    sender_address: AccountAddress,
+) -> (HashMap<AccountAddress, i64>, u64) {
+    let mut deltas = HashMap::new();
+    for (recipient, amount) in recipient_addresses.into_iter().zip(transfer_amounts) {
+        let amount = amount as i64;
+        deltas
+            .entry(recipient)
+            .and_modify(|counter| *counter += amount)
+            .or_insert(amount);
+        deltas
+            .entry(sender_address)
+            .and_modify(|counter| *counter -= amount)
+            .or_insert(-amount);
+    }
+
+    let amount_from_sender = -deltas.remove(&sender_address).unwrap_or(0);
+    assert!(amount_from_sender >= 0);
+
+    (deltas, amount_from_sender as u64)
+}

@@ -1,0 +1,22 @@
+[package]
+name = "chain-network"
+version = "0.1.0"
+description = "QUIC validator mesh authenticated by committee keys (design doc D5, section 7)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-crypto-derive = { workspace = true }
+bcs = { workspace = true }
+chain-types = { workspace = true }
+quinn = { workspace = true }
+rcgen = { workspace = true }
+rustls = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+aptos-keygen = { workspace = true }

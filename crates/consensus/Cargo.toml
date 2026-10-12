@@ -1,0 +1,20 @@
+[package]
+name = "chain-consensus"
+version = "0.1.0"
+description = "HRW leader election and 2-chain HotStuff (Jolteon-style) consensus (design doc section 5)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-types = { workspace = true }
+bcs = { workspace = true }
+chain-types = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+aptos-keygen = { workspace = true }
+rand = { workspace = true }
+tempfile = { workspace = true }
